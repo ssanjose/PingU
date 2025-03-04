@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	_ "github.com/lib/pq"
 )
@@ -47,5 +48,41 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 		return err
 	}
 
+	return nil
+}
+
+func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
+	query := `
+		SELECT id, username, email, pinged, last_pinged_at, verified, pinged_partner_count, created_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var user User
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Pinged,
+		&user.LastPingedAt,
+		&user.Verified,
+		&user.PingedPartnerCount,
+		&user.PartnerID,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
+func (s *UserStore) Ping(ctx context.Context) error {
 	return nil
 }
