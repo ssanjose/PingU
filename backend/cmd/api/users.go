@@ -12,7 +12,7 @@ import (
 
 type CreatePostPayload struct {
 	Username string `json:"username" validate:"required,max=35"`
-	Password string `json:"-" validate:"required,min=6,max=72"`
+	Password string `json:"password" validate:"required,min=6,max=72"`
 	Email    string `json:"email" validate:"required,email"`
 }
 
