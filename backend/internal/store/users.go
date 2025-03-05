@@ -83,6 +83,29 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	return &user, nil
 }
 
+func (s *UserStore) Delete(ctx context.Context, id int64) error {
+	query := `
+		DELETE FROM users
+		WHERE id = $1
+	`
+
+	res, err := s.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
 func (s *UserStore) Ping(ctx context.Context) error {
 	return nil
 }

@@ -49,6 +49,9 @@ func (app *application) mount() http.Handler {
 
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Get("/", app.getUserHandler)
+				r.Patch("/", app.updateUserHandler)
+				r.Delete("/", app.deleteUserHandler)
+
 				r.Get("/ping", app.pingUserPartnerHandler)
 			})
 		})

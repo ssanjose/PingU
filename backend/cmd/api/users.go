@@ -16,6 +16,12 @@ type CreatePostPayload struct {
 	Email    string `json:"email" validate:"required,email"`
 }
 
+type UpdatePostPayload struct {
+	Username string `json:"username" validate:"omitempty,max=35"`
+	Password string `json:"password" validate:"omitempty,min=6,max=72"`
+	Email    string `json:"email" validate:"omitempty,email"`
+}
+
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreatePostPayload
 	if err := readJSON(w, r, &payload); err != nil {
@@ -71,6 +77,35 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, "pong")
+}
+
+func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "userID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	if err := app.store.Users.Delete(ctx, id); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
