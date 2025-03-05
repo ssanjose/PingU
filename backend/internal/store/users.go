@@ -9,17 +9,17 @@ import (
 )
 
 type User struct {
-	ID                 int64  `json:"id"`
-	Username           string `json:"username"`
-	Email              string `json:"email"`
-	Password           string `json:"-"`
-	Pinged             bool   `json:"pinged"`               // user is pinged
-	LastPingedAt       string `json:"last_pinged_at"`       // last time user was pinged
-	Verified           bool   `json:"verified"`             // email is verified
-	UpdatedAt          string `json:"updated_at"`           // last time user was updated
-	CreatedAt          string `json:"created_at"`           // user's account creation date
-	PingedPartnerCount int64  `json:"pinged_partner_count"` // number of times user has pinged partner without response
-	PartnerID          int64  `json:"partner_id"`           // user's partner's userID
+	ID                 int64          `json:"id"`
+	Username           string         `json:"username"`
+	Email              string         `json:"email"`
+	Password           string         `json:"-"`
+	Pinged             bool           `json:"pinged"`               // user is pinged
+	LastPingedAt       sql.NullString `json:"last_pinged_at"`       // last time user was pinged
+	Verified           bool           `json:"verified"`             // email is verified
+	UpdatedAt          string         `json:"updated_at"`           // last time user was updated
+	CreatedAt          string         `json:"created_at"`           // user's account creation date
+	PingedPartnerCount int64          `json:"pinged_partner_count"` // number of times user has pinged partner without response
+	PartnerID          sql.NullInt64  `json:"partner_id"`           // user's partner's userID
 }
 
 type UserStore struct {
@@ -53,7 +53,7 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 
 func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	query := `
-		SELECT id, username, email, pinged, last_pinged_at, verified, pinged_partner_count, created_at
+		SELECT id, username, email, pinged, last_pinged_at, verified, pinged_partner_count, partner_id, updated_at, created_at
 		FROM users
 		WHERE id = $1
 	`
@@ -69,6 +69,7 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		&user.PingedPartnerCount,
 		&user.PartnerID,
 		&user.UpdatedAt,
+		&user.CreatedAt,
 	)
 
 	if err != nil {
