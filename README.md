@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#why-should-i-use-grace">Why</a> •
+  <a href="#why-should-i-use-pingu">Why</a> •
   <a href="#features">Features</a> •
   <a href="#documentation">Documentation</a> •
   <a href="#contribution">Contributing</a>
