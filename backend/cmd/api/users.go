@@ -11,24 +11,18 @@ import (
 	"golang.org/x/net/context"
 )
 
-type postKey string
+type userKey string
 
-const postCtx postKey = "post"
+const userCtx userKey = "user"
 
-type CreatePostPayload struct {
+type CreateUserPayload struct {
 	Username string `json:"username" validate:"required,max=35"`
 	Password string `json:"password" validate:"required,min=6,max=72"`
 	Email    string `json:"email" validate:"required,email"`
 }
 
-type UpdatePostPayload struct {
-	Username string `json:"username" validate:"omitempty,max=35"`
-	Password string `json:"password" validate:"omitempty,min=6,max=72"`
-	Email    string `json:"email" validate:"omitempty,email"`
-}
-
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var payload CreatePostPayload
+	var payload CreateUserPayload
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -67,8 +61,37 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UpdateUserPayload struct {
+	Username *string `json:"username" validate:"omitempty,max=35"`
+	Email    *string `json:"email" validate:"omitempty,email"`
+}
+
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getPostFromCtx(r)
+	var payload UpdateUserPayload
+
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if payload.Username != nil {
+		user.Username = *payload.Username
+	}
+
+	if payload.Email != nil {
+		user.Email = *payload.Email
+	}
+
+	if err := app.store.Users.Update(r.Context(), user); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 
 	if err := writeJSON(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)
@@ -102,10 +125,9 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "userID")
-	id, err := strconv.ParseInt(idParam, 10, 64)
+	user := getPostFromCtx(r)
 
-	if err != nil {
+	if err := app.store.Users.Ping(r.Context(), user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -114,11 +136,11 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 }
 
 func getPostFromCtx(r *http.Request) *store.User {
-	user, _ := r.Context().Value("user").(*store.User)
+	user, _ := r.Context().Value(userCtx).(*store.User)
 	return user
 }
 
-func (app *application) usersContextMiddleware(next http.Handler) http.Handler {
+func (app *application) userContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		idParam := chi.URLParam(r, "userID")
 		id, err := strconv.ParseInt(idParam, 10, 64)
@@ -141,7 +163,7 @@ func (app *application) usersContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, "user", user)
+		ctx = context.WithValue(ctx, userCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
