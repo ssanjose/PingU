@@ -46,7 +46,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := writeJSON(w, http.StatusCreated, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -55,7 +55,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getPostFromCtx(r)
 
-	if err := writeJSON(w, http.StatusOK, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -93,7 +93,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := writeJSON(w, http.StatusOK, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -132,7 +132,7 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeJSON(w, http.StatusOK, "pong")
+	app.jsonResponse(w, http.StatusOK, "pong")
 }
 
 func getPostFromCtx(r *http.Request) *store.User {
