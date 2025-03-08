@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -110,14 +111,27 @@ func (s *UserStore) Delete(ctx context.Context, id int64) error {
 func (s *UserStore) Update(ctx context.Context, user *User) error {
 	query := `
 		UPDATE users
-		SET username = $1, email = $2
-		WHERE id = $3
+		SET username = $1, email = $2, updated_at = NOW()
+		WHERE id = $3 AND updated_at = $4
+    RETURNING updated_at
 	`
 
-	_, err := s.db.ExecContext(ctx, query, user.Username, user.Email, user.ID)
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		user.Username,
+		user.Email,
+		user.ID,
+		user.UpdatedAt,
+	).Scan(&user.UpdatedAt)
 
 	if err != nil {
-		return err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
 	}
 
 	return nil
@@ -154,33 +168,59 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	}
 
 	query = `
-		UPDATE users
-		SET pinged_partner_count = pinged_partner_count + 1
-		WHERE id = $1
-	`
+    UPDATE users
+    SET pinged_partner_count = pinged_partner_count + 1,
+        updated_at = NOW()
+    WHERE id = $1 AND updated_at = $2
+    RETURNING updated_at
+  `
 
-	_, err = tx.ExecContext(
+	err = tx.QueryRowContext(
 		ctx,
 		query,
 		user.ID,
-	)
+		user.UpdatedAt,
+	).Scan(&user.UpdatedAt)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	var partnerUpdatedAt time.Time
+	query = `
+      SELECT updated_at
+      FROM users
+      WHERE id = $1
+  `
+	err = tx.QueryRowContext(ctx, query, user.PartnerID.Int64).Scan(&partnerUpdatedAt)
 	if err != nil {
 		return err
 	}
 
 	query = `
     UPDATE users
-    SET pinged = true, last_pinged_at = NOW()
-    WHERE partner_id = $1
+    SET pinged = true, last_pinged_at = NOW(), updated_at = NOW()
+    WHERE id = $1 AND updated_at = $2
   `
 
-	_, err = tx.ExecContext(
+	var newPartnerUpdatedAt time.Time
+	err = tx.QueryRowContext(
 		ctx,
 		query,
 		user.PartnerID,
-	)
+		partnerUpdatedAt,
+	).Scan(&newPartnerUpdatedAt)
 	if err != nil {
-		return err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
 	}
 
 	// Commit the transaction.
