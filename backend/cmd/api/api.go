@@ -48,11 +48,13 @@ func (app *application) mount() http.Handler {
 			r.Post("/", app.createUserHandler)
 
 			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.userContextMiddleware)
+
 				r.Get("/", app.getUserHandler)
 				r.Patch("/", app.updateUserHandler)
 				r.Delete("/", app.deleteUserHandler)
 
-				r.Get("/ping", app.pingUserPartnerHandler)
+				r.Post("/ping", app.pingUserPartnerHandler)
 			})
 		})
 	})
