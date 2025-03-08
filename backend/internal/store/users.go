@@ -107,6 +107,86 @@ func (s *UserStore) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *UserStore) Ping(ctx context.Context) error {
+func (s *UserStore) Update(ctx context.Context, user *User) error {
+	query := `
+		UPDATE users
+		SET username = $1, email = $2
+		WHERE id = $3
+	`
+
+	_, err := s.db.ExecContext(ctx, query, user.Username, user.Email, user.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserStore) Ping(ctx context.Context, user *User) error {
+	if !user.PartnerID.Valid {
+		return ErrPartnerNotFound
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var partnerExists bool
+	query := `
+    SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)
+  `
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.PartnerID.Int64,
+	).Scan(
+		&partnerExists,
+	)
+	if err != nil {
+		return err
+	}
+
+	if !partnerExists {
+		return ErrPartnerNotFound
+	}
+
+	query = `
+		UPDATE users
+		SET pinged_partner_count = pinged_partner_count + 1
+		WHERE id = $1
+	`
+
+	_, err = tx.ExecContext(
+		ctx,
+		query,
+		user.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	query = `
+    UPDATE users
+    SET pinged = true, last_pinged_at = NOW()
+    WHERE partner_id = $1
+  `
+
+	_, err = tx.ExecContext(
+		ctx,
+		query,
+		user.PartnerID,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Commit the transaction.
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
