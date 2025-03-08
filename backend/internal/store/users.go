@@ -10,17 +10,17 @@ import (
 )
 
 type User struct {
-	ID                 int64          `json:"id"`
-	Username           string         `json:"username"`
-	Email              string         `json:"email"`
-	Password           string         `json:"-"`
-	Pinged             bool           `json:"pinged"`               // user is pinged
-	LastPingedAt       sql.NullString `json:"last_pinged_at"`       // last time user was pinged
-	Verified           bool           `json:"verified"`             // email is verified
-	UpdatedAt          string         `json:"updated_at"`           // last time user was updated
-	CreatedAt          string         `json:"created_at"`           // user's account creation date
-	PingedPartnerCount int64          `json:"pinged_partner_count"` // number of times user has pinged partner without response
-	PartnerID          sql.NullInt64  `json:"partner_id"`           // user's partner's userID
+	ID                 int64         `json:"id"`
+	Username           string        `json:"username"`
+	Email              string        `json:"email"`
+	Password           string        `json:"-"`
+	Pinged             bool          `json:"pinged"`               // user is pinged
+	LastPingedAt       sql.NullTime  `json:"last_pinged_at"`       // last time user was pinged
+	Verified           bool          `json:"verified"`             // email is verified
+	UpdatedAt          time.Time     `json:"updated_at"`           // last time user was updated
+	CreatedAt          time.Time     `json:"created_at"`           // user's account creation date
+	PingedPartnerCount int64         `json:"pinged_partner_count"` // number of times user has pinged partner without response
+	PartnerID          sql.NullInt64 `json:"partner_id"`           // user's partner's userID
 }
 
 type UserStore struct {
