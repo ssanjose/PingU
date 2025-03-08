@@ -4,13 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
 var (
-	ErrNotFound        = errors.New("resource not found")
-	ErrPartnerNotFound = errors.New("partner not found")
+	ErrNotFound          = errors.New("resource not found")
+	ErrPartnerNotFound   = errors.New("partner not found")
+	QueryTimeoutDuration = time.Second * 5
 )
 
 type Storage struct {

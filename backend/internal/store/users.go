@@ -34,6 +34,9 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 		RETURNING id, created_at
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
 	err := s.db.QueryRowContext(
 		ctx,
 		query,
@@ -58,6 +61,9 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		FROM users
 		WHERE id = $1
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	var user User
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
@@ -91,6 +97,9 @@ func (s *UserStore) Delete(ctx context.Context, id int64) error {
 		WHERE id = $1
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
 	res, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -115,6 +124,9 @@ func (s *UserStore) Update(ctx context.Context, user *User) error {
 		WHERE id = $3 AND updated_at = $4
     RETURNING updated_at
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	err := s.db.QueryRowContext(
 		ctx,
@@ -141,6 +153,9 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	if !user.PartnerID.Valid {
 		return ErrPartnerNotFound
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
