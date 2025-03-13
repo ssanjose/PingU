@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 
 	"strconv"
@@ -111,8 +110,8 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 
 	if err := app.store.Users.Delete(ctx, id); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNotFound):
+		switch err {
+		case store.ErrNotFound:
 			app.notFoundResponse(w, r, err)
 			return
 		default:
@@ -153,8 +152,8 @@ func (app *application) userContextMiddleware(next http.Handler) http.Handler {
 
 		user, err := app.store.Users.GetByID(ctx, id)
 		if err != nil {
-			switch {
-			case errors.Is(err, store.ErrNotFound):
+			switch err {
+			case store.ErrNotFound:
 				app.notFoundResponse(w, r, err)
 				return
 			default:

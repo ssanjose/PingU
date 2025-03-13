@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -80,8 +79,8 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		switch err {
+		case sql.ErrNoRows:
 			return nil, ErrNotFound
 		default:
 			return nil, err
@@ -138,8 +137,8 @@ func (s *UserStore) Update(ctx context.Context, user *User) error {
 	).Scan(&user.UpdatedAt)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		switch err {
+		case sql.ErrNoRows:
 			return ErrNotFound
 		default:
 			return err
@@ -197,8 +196,8 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 		user.UpdatedAt,
 	).Scan(&user.UpdatedAt)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		switch err {
+		case sql.ErrNoRows:
 			return ErrNotFound
 		default:
 			return err
@@ -230,8 +229,8 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 		partnerUpdatedAt,
 	).Scan(&newPartnerUpdatedAt)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		switch err {
+		case sql.ErrNoRows:
 			return ErrNotFound
 		default:
 			return err
