@@ -127,11 +127,18 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 	user := getUserFromCtx(r)
 
 	if err := app.store.Users.Ping(r.Context(), user); err != nil {
-		app.internalServerError(w, r, err)
+		switch err {
+		case store.ErrPartnerNotFound:
+			app.badRequestResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+		}
 		return
 	}
 
-	app.jsonResponse(w, http.StatusOK, "pong")
+	response := map[string]string{"message": "Partner pinged!"}
+	app.jsonResponse(w, http.StatusOK, response)
 }
 
 func (app *application) setUserPartnerHandler(w http.ResponseWriter, r *http.Request) {

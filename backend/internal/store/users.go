@@ -283,13 +283,14 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
     UPDATE users
     SET pinged = true, last_pinged_at = NOW(), updated_at = NOW()
     WHERE id = $1 AND updated_at = $2
+		RETURNING updated_at
   `
 
 	var newPartnerUpdatedAt time.Time
 	err = tx.QueryRowContext(
 		ctx,
 		query,
-		user.PartnerID,
+		user.PartnerID.Int64,
 		partnerUpdatedAt,
 	).Scan(&newPartnerUpdatedAt)
 	if err != nil {
