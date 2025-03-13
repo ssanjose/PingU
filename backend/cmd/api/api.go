@@ -56,6 +56,7 @@ func (app *application) mount() http.Handler {
 
 				r.Put("/partner/{partnerID}", app.setUserPartnerHandler)
 				r.Put("/ping", app.pingUserPartnerHandler)
+				r.Put("/pong", app.pongUserPartnerHandler)
 			})
 		})
 	})

@@ -148,6 +148,7 @@ func (s *UserStore) Update(ctx context.Context, user *User) error {
 	return nil
 }
 
+// Partner sets two users as partners.
 func (s *UserStore) Partner(ctx context.Context, user *User, partner *User) error {
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -212,6 +213,7 @@ func (s *UserStore) Partner(ctx context.Context, user *User, partner *User) erro
 	return nil
 }
 
+// Pings a user's partner and updates the user's pinged_partner_count.
 func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	if !user.PartnerID.Valid {
 		return ErrPartnerNotFound
@@ -293,6 +295,51 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 		user.PartnerID.Int64,
 		partnerUpdatedAt,
 	).Scan(&newPartnerUpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	// Commit the transaction.
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Partner answers a user's partner's ping and turns off the user's pinged status.
+func (s *UserStore) Pong(ctx context.Context, user *User) error {
+	if !user.PartnerID.Valid {
+		return ErrPartnerNotFound
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `
+		UPDATE users
+		SET pinged = false, updated_at = NOW()
+		WHERE id = $1 AND updated_at = $2
+		RETURNING updated_at
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.ID,
+		user.UpdatedAt,
+	).Scan(&user.UpdatedAt)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

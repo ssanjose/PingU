@@ -141,6 +141,24 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 	app.jsonResponse(w, http.StatusOK, response)
 }
 
+func (app *application) pongUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	if err := app.store.Users.Pong(r.Context(), user); err != nil {
+		switch err {
+		case store.ErrPartnerNotFound:
+			app.badRequestResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	response := map[string]string{"message": "You ponged!"}
+	app.jsonResponse(w, http.StatusOK, response)
+}
+
 func (app *application) setUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 

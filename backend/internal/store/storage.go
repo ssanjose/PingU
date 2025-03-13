@@ -23,6 +23,7 @@ type Storage struct {
 		Delete(context.Context, int64) error
 		Partner(context.Context, *User, *User) error
 		Ping(context.Context, *User) error
+		Pong(context.Context, *User) error
 	}
 }
 
