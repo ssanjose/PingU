@@ -148,6 +148,70 @@ func (s *UserStore) Update(ctx context.Context, user *User) error {
 	return nil
 }
 
+func (s *UserStore) Partner(ctx context.Context, user *User, partner *User) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `
+		UPDATE users
+		SET partner_id = $1, updated_at = NOW()
+		WHERE id = $2 AND updated_at = $3
+		RETURNING updated_at
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		partner.ID,
+		user.ID,
+		user.UpdatedAt,
+	).Scan(&user.UpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	query = `
+		UPDATE users
+		SET partner_id = $1, updated_at = NOW()
+		WHERE id = $2 AND updated_at = $3
+		RETURNING updated_at
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.ID,
+		partner.ID,
+		partner.UpdatedAt,
+	).Scan(&partner.UpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	// Commit the transaction.
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	if !user.PartnerID.Valid {
 		return ErrPartnerNotFound

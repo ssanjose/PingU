@@ -134,6 +134,35 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 	app.jsonResponse(w, http.StatusOK, "pong")
 }
 
+func (app *application) setUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	partnerID, err := strconv.ParseInt(chi.URLParam(r, "partnerID"), 10, 64)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	partner, err := app.store.Users.GetByID(r.Context(), partnerID)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.notFoundResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	if err := app.store.Users.Partner(r.Context(), user, partner); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.jsonResponse(w, http.StatusOK, "partnered")
+}
+
 func getUserFromCtx(r *http.Request) *store.User {
 	user, _ := r.Context().Value(userCtx).(*store.User)
 	return user

@@ -21,6 +21,7 @@ type Storage struct {
 		GetByID(context.Context, int64) (*User, error)
 		Update(context.Context, *User) error
 		Delete(context.Context, int64) error
+		Partner(context.Context, *User, *User) error
 		Ping(context.Context, *User) error
 	}
 }
