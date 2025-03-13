@@ -213,6 +213,94 @@ func (s *UserStore) Partner(ctx context.Context, user *User, partner *User) erro
 	return nil
 }
 
+// Unpartner removes the partner relationship between two users.
+func (s *UserStore) Unpartner(ctx context.Context, user *User) error {
+	if !user.PartnerID.Valid {
+		return ErrPartnerNotFound
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var partnerUpdatedAt time.Time
+	query := `
+      SELECT updated_at
+      FROM users
+      WHERE id = $1
+  `
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.PartnerID.Int64,
+	).Scan(&partnerUpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	query = `
+		UPDATE users
+		SET pinged = false, pinged_partner_count = 0, partner_id = NULL, updated_at = NOW()
+		WHERE id = $1 AND updated_at = $2
+		RETURNING updated_at
+	`
+
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.ID,
+		user.UpdatedAt,
+	).Scan(&user.UpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	query = `
+		UPDATE users
+		SET pinged = false, pinged_partner_count = 0, partner_id = NULL, updated_at = NOW()
+		WHERE id = $1 AND updated_at = $2
+		RETURNING updated_at
+	`
+
+	var newPartnerUpdatedAt time.Time
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		user.PartnerID.Int64,
+		partnerUpdatedAt,
+	).Scan(&newPartnerUpdatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
+	}
+
+	// Commit the transaction.
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Pings a user's partner and updates the user's pinged_partner_count.
 func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	if !user.PartnerID.Valid {
@@ -228,23 +316,24 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 	}
 	defer tx.Rollback()
 
-	var partnerExists bool
+	var partnerUpdatedAt time.Time
 	query := `
-    SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)
+      SELECT updated_at
+      FROM users
+      WHERE id = $1
   `
 	err = tx.QueryRowContext(
 		ctx,
 		query,
 		user.PartnerID.Int64,
-	).Scan(
-		&partnerExists,
-	)
+	).Scan(&partnerUpdatedAt)
 	if err != nil {
-		return err
-	}
-
-	if !partnerExists {
-		return ErrPartnerNotFound
+		switch err {
+		case sql.ErrNoRows:
+			return ErrNotFound
+		default:
+			return err
+		}
 	}
 
 	query = `
@@ -268,17 +357,6 @@ func (s *UserStore) Ping(ctx context.Context, user *User) error {
 		default:
 			return err
 		}
-	}
-
-	var partnerUpdatedAt time.Time
-	query = `
-      SELECT updated_at
-      FROM users
-      WHERE id = $1
-  `
-	err = tx.QueryRowContext(ctx, query, user.PartnerID.Int64).Scan(&partnerUpdatedAt)
-	if err != nil {
-		return err
 	}
 
 	query = `

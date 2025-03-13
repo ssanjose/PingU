@@ -55,6 +55,7 @@ func (app *application) mount() http.Handler {
 				r.Delete("/", app.deleteUserHandler)
 
 				r.Put("/partner/{partnerID}", app.setUserPartnerHandler)
+				r.Put("/unpartner", app.unsetUserPartnerHandler)
 				r.Put("/ping", app.pingUserPartnerHandler)
 				r.Put("/pong", app.pongUserPartnerHandler)
 			})

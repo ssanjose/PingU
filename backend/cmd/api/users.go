@@ -137,8 +137,7 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := map[string]string{"message": "Partner pinged!"}
-	app.jsonResponse(w, http.StatusOK, response)
+	app.jsonResponse(w, http.StatusNoContent, nil)
 }
 
 func (app *application) pongUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,8 +154,7 @@ func (app *application) pongUserPartnerHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := map[string]string{"message": "You ponged!"}
-	app.jsonResponse(w, http.StatusOK, response)
+	app.jsonResponse(w, http.StatusNoContent, nil)
 }
 
 func (app *application) setUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +183,24 @@ func (app *application) setUserPartnerHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	app.jsonResponse(w, http.StatusOK, "partnered")
+	app.jsonResponse(w, http.StatusNoContent, nil)
+}
+
+func (app *application) unsetUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	if err := app.store.Users.Unpartner(r.Context(), user); err != nil {
+		switch err {
+		case store.ErrPartnerNotFound:
+			app.badRequestResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	app.jsonResponse(w, http.StatusNoContent, nil)
 }
 
 func getUserFromCtx(r *http.Request) *store.User {
