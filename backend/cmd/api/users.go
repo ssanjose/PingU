@@ -53,7 +53,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := getPostFromCtx(r)
+	user := getUserFromCtx(r)
 
 	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)
@@ -67,7 +67,7 @@ type UpdateUserPayload struct {
 }
 
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := getPostFromCtx(r)
+	user := getUserFromCtx(r)
 	var payload UpdateUserPayload
 
 	if err := readJSON(w, r, &payload); err != nil {
@@ -125,7 +125,7 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Request) {
-	user := getPostFromCtx(r)
+	user := getUserFromCtx(r)
 
 	if err := app.store.Users.Ping(r.Context(), user); err != nil {
 		app.internalServerError(w, r, err)
@@ -135,7 +135,7 @@ func (app *application) pingUserPartnerHandler(w http.ResponseWriter, r *http.Re
 	app.jsonResponse(w, http.StatusOK, "pong")
 }
 
-func getPostFromCtx(r *http.Request) *store.User {
+func getUserFromCtx(r *http.Request) *store.User {
 	user, _ := r.Context().Value(userCtx).(*store.User)
 	return user
 }
