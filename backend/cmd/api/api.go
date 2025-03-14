@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
+
 	"github.com/ssanjose/PingU/internal/store"
 )
 
@@ -35,6 +37,10 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// Enable httprate request limiter of 100 requests per minute.
+	// from https://github.com/go-chi/httprate
+	r.Use(httprate.LimitByIP(100, time.Minute))
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
