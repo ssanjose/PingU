@@ -56,8 +56,6 @@ func (app *application) mount() http.Handler {
 		r.Get("/health", app.healthCheckHandler)
 
 		r.Route("/users", func(r chi.Router) {
-			r.Post("/", app.createUserHandler)
-
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 
