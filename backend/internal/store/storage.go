@@ -17,7 +17,8 @@ var (
 
 type Storage struct {
 	Users interface {
-		Create(context.Context, *User) error
+		Create(context.Context, *sql.Tx, *User) error
+		CreateAndInvite(ctx context.Context, user *User, token string, exp time.Duration) error
 		GetByID(context.Context, int64) (*User, error)
 		Update(context.Context, *User) error
 		Delete(context.Context, int64) error
@@ -32,4 +33,18 @@ func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Users: &UserStore{db},
 	}
+}
+
+func withTx(db *sql.DB, ctx context.Context, fn func(*sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
