@@ -70,11 +70,11 @@ func (app *application) mount() http.Handler {
 				r.Put("/ping", app.pingUserPartnerHandler)
 				r.Put("/pong", app.pongUserPartnerHandler)
 			})
+		})
 
-			r.Route("/authentication", func(r chi.Router) {
-				r.Post("/user", app.registerUserHandler)
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
 
-			})
 		})
 	})
 
