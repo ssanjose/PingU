@@ -64,7 +64,7 @@ func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 		ctx,
 		query,
 		user.Username,
-		user.Password,
+		user.Password.hash,
 		user.Email,
 	).Scan(
 		&user.ID,
