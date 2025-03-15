@@ -16,8 +16,8 @@ const userCtx userKey = "user"
 
 type CreateUserPayload struct {
 	Username string `json:"username" validate:"required,max=35"`
+	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,min=6,max=72"`
-	Email    string `json:"email" validate:"required,email"`
 }
 
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
