@@ -78,3 +78,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 }
+
+func (app *application) loginUserHandler(w http.ResponseWriter, r *http.Request) {
+	app.jsonResponse(w, http.StatusOK, nil)
+}
