@@ -1,0 +1,1 @@
+DROP INDEX IF NOT EXISTS idx_users_partner_id
